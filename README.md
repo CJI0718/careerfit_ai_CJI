@@ -6,7 +6,6 @@
 
 ## 프로젝트 개요
 
-
 **누구를 위한 것인가**
 '미지정 회계사' 문제는 2023년부터 나타나 2025년에 심각해졌고, 2026년 합격자에게도 닥칠 것이 분명하다. CareerFit AI는 이 상황에서 살아남아야 하는 공인회계사 시험 합격자 — 사실상 '나'와 내 주변 — 를 위한 도구다.
 
@@ -45,32 +44,121 @@ CareerFit AI는 정보가 부족한 미지정 회계사를 위해 "곧바로 매
 
 ## 기술 스택
 
-
-
 | 영역 | 기술 |
-
-|---|---|
-
-| 백엔드 | Python, FastAPI |
-
+|------|------|
+| 백엔드 | Python 3.12, FastAPI |
 | AI API | Gemini 2.5 Flash-Lite |
-
 | 데이터 | Pandas, SQLite, ChromaDB |
-
 | 프론트엔드 | React, Vite |
-
 | 실행 환경 | Docker |
+
+
+
+## 로컬 실행 방법
+
+### 1. 가상환경 세팅
+
+**Python 3.12** 기반 venv를 사용한다. Python 3.14는 일부 패키지 빌드 실패로 사용 불가.
+
+```powershell
+# venv 생성 (최초 1회)
+py -3.12 -m venv backend\venv
+
+# venv 활성화 (매 세션마다)
+cd backend
+.\venv\Scripts\activate
+```
+
+활성화 성공 시 터미널 앞에 `(venv)` 표시됨.
+
+### 2. 의존성 설치
+
+```powershell
+pip install -r requirements.txt
+```
+
+설치되는 주요 패키지:
+
+| 패키지 | 버전 | 용도 |
+|--------|------|------|
+| fastapi | 0.115.5 | API 서버 프레임워크 |
+| uvicorn | 0.32.1 | ASGI 서버 (FastAPI 실행기) |
+| pydantic | 2.10.3 | 요청·응답 데이터 검증 |
+| google-generativeai | 0.8.3 | Gemini API 클라이언트 |
+| pandas | 2.2.3 | CSV 데이터 처리 |
+| chromadb | 0.5.23 | 벡터 DB (RAG용) |
+| python-dotenv | 1.0.1 | `.env` 환경변수 로드 |
+
+### 3. 백엔드 서버 실행
+
+**반드시 `backend` 폴더 안에서 실행한다.**
+
+```powershell
+cd backend
+.\venv\Scripts\activate
+uvicorn main:app --reload --port 8000
+```
+
+서버 정상 실행 시:
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+```
+
+### 4. API 확인
+
+| URL | 설명 |
+|-----|------|
+| http://localhost:8000 | 서버 상태 확인 |
+| http://localhost:8000/docs | Swagger UI — 브라우저에서 API 직접 테스트 가능 |
+| http://localhost:8000/redoc | ReDoc 문서 |
+| http://localhost:8000/health | 헬스체크 엔드포인트 |
+| http://localhost:8000/jobs | 채용공고 목록 |
+| http://localhost:8000/analyze | 역량 분석 (POST) |
+
+> `/docs` 페이지에서 각 엔드포인트의 **Try it out** 버튼으로 요청을 직접 보내고 응답을 확인할 수 있다.
+
+---
+
+## 2일차 구현 내용
+
+### 엔드포인트
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/health` | 서버 상태 확인 |
+| GET | `/jobs` | 목업 채용공고 목록 반환 |
+| GET | `/jobs/{id}` | 특정 공고 상세 조회 |
+| POST | `/analyze` | 전공·스킬·관심직무 기반 분석 결과 반환 |
+
+### 목업 채용공고 (3건)
+
+실제 CSV 데이터 연결 전까지 사용하는 임시 데이터. 미지정 회계사의 3가지 수습 트랙을 반영했다.
+
+| # | 회사 | 직무 | 트랙 |
+|---|------|------|------|
+| 1 | 삼일회계법인 | FAS 기업가치평가 어소시에이트 | 빅펌 |
+| 2 | LG에너지솔루션 | 재무회계 담당 (배터리 사업부) | 사기업 |
+| 3 | IBK기업은행 | 재무기획 및 내부회계관리 담당 | 공기업·금융 |
+
+### 환경변수
+
+`.env.example` 참고. 실제 `.env` 파일은 Git에 올리지 않는다.
+
+```
+GEMINI_API_KEY=your_key_here
+MOCK_MODE=true   # true이면 Gemini 호출 없이 목업 응답 반환
+```
+
+---
 
 ## 진행 현황
 
-
-
-- [x] 1일차: 프로젝트 기획 및 개발 환경 세팅
-
-- [ ] 2일차: FastAPI 서버 구축 및 Gemini API 연결
-
-- [ ] 3일차: 데이터 파이프라인 구축
-
-- [ ] 4일차: RAG 기반 서비스 + React UI
-
-- [ ] 5일차: Docker + 포트폴리오 완성
+- [x] **1일차**: 프로젝트 기획 및 개발 환경 세팅
+- [x] **2일차**: FastAPI 서버 구축 및 Gemini API 연결
+  - `/health`, `/jobs`, `/analyze` 엔드포인트 구현
+  - Python 3.12 가상환경(venv) 세팅 및 의존성 설치
+  - Gemini 2.5 Flash-Lite API 연결 준비 및 `MOCK_MODE` 환경변수 설정
+  - 미지정 회계사 대상 목업 채용공고 3건 추가 (빅펌·사기업·공기업 트랙)
+- [ ] **3일차**: 데이터 파이프라인 구축
+- [ ] **4일차**: RAG 기반 서비스 + React UI
+- [ ] **5일차**: Docker + 포트폴리오 완성

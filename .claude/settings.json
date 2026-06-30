@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(py -0)",
+      "PowerShell(py -3.12 -m venv \"c:\\\\Users\\\\CJI\\\\Documents\\\\GitHub\\\\careerfit_ai_CJI\\\\backend\\\\venv\")",
+      "PowerShell(Stop-Process -Name \"uvicorn\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Start-Process -NoNewWindow -FilePath \"c:\\\\Users\\\\CJI\\\\Documents\\\\GitHub\\\\careerfit_ai_CJI\\\\backend\\\\venv\\\\Scripts\\\\uvicorn.exe\" -ArgumentList \"main:app --port 8000\" -WorkingDirectory \"c:\\\\Users\\\\CJI\\\\Documents\\\\GitHub\\\\careerfit_ai_CJI\\\\backend\")",
+      "PowerShell(git -C \"c:\\\\Users\\\\CJI\\\\Documents\\\\GitHub\\\\careerfit_ai_CJI\" status)"
+    ]
+  }
+}
