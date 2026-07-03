@@ -162,6 +162,11 @@ LLM_MODEL=gemini-2.5-flash-lite
   - Python 3.12 가상환경(venv) 세팅 및 의존성 설치
   - Gemini 2.5 Flash-Lite API 연결 준비 및 `MOCK_MODE` 환경변수 설정
   - 미지정 회계사 대상 목업 채용공고 3건 추가 (빅펌·사기업·공기업 트랙)
-- [ ] **3일차**: 데이터 파이프라인 구축
+- [ ] **3일차**: 데이터 파이프라인 구축 *(진행 중 🔄)*
+  - LLM 서비스 계층 분리 (`services/llm_service.py`) — Gemini 클라이언트 초기화, `MOCK_MODE` 분기, 프롬프트 생성(`build_prompt`), 응답 처리(`get_llm_response`), API 오류(429 등) 시 목업 폴백
+  - `/analyze` 라우터를 실제 LLM 서비스 호출로 연결 (하드코딩 목업 제거)
+  - 라우터·진입점 코드 포맷 정리 (`health.py`, `jobs.py`, `main.py`)
+  - 개발 워크플로우 문서 보강 (`docs/DEVELOPMENT_WORKFLOW.md`) — Git 개념·브랜치 설명 및 문제 상황별 대처 추가
+  - *(남은 작업: CSV 채용 데이터 적재, ChromaDB 벡터 인덱싱, RAG 검색 연결)*
 - [ ] **4일차**: RAG 기반 서비스 + React UI
 - [ ] **5일차**: Docker + 포트폴리오 완성
