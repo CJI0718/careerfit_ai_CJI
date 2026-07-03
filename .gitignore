@@ -30,6 +30,12 @@ backend/chroma_db/
 
 
 
+# 전처리 생성물 (preprocess.py로 재생성 가능)
+
+backend/data/rag_documents.json
+
+
+
 # 프론트엔드 패키지 폴더 (용량이 매우 크므로 업로드 제외)
 
 node_modules/
