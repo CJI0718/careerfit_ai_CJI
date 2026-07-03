@@ -154,6 +154,38 @@ LLM_MODEL=gemini-2.5-flash-lite
 
 ---
 
+## 3일차 구현 내용
+
+### 데이터 전처리 파이프라인 (`backend/data/preprocess.py`)
+
+원본 CSV를 정제해 SQLite와 RAG용 JSON으로 저장하는 전처리 파이프라인을 구축했다. `python data/preprocess.py`로 순차 실행된다.
+
+| 단계 | 함수 | 내용 |
+|------|------|------|
+| 1. 로드 | `load_data` | CSV 읽기 (UTF-8 실패 시 CP949 재시도) |
+| 2. 결측치 확인 | `check_missing` | 컬럼별 결측치 수·비율 출력 |
+| 3. 결측치 처리 | `handle_missing` | 핵심 컬럼(title·required_skills) 결측 행 제거, 나머지 텍스트 컬럼 빈 문자열 처리 |
+| 4. 중복 제거 | `remove_duplicates` | company+title 조합 기준 중복 제거 |
+| 5. 스킬 표준화 | `standardize_skills` | 사전 기반 표기 통일 (python→Python, ml→머신러닝 등) |
+| 6. SQLite 저장 | `save_to_sqlite` | `jobs` 테이블로 저장 후 행 수 검증 |
+| 7. RAG 문서 변환 | `convert_to_rag_documents` | 행별 자연어 문서 + metadata(id·company·title·job_type·deadline·source) 생성 |
+| 8. JSON 저장 | `save_rag_documents` | `rag_documents.json`으로 중간 저장 (ChromaDB 적재 전 단계) |
+
+원본 채용공고 18건 → 결측·중복 정제 후 15건.
+
+### 데이터셋
+
+- `data/jobs.csv`: 채용공고 데이터 (18건, 데이터 분석·엔지니어링·AI 등)
+- `data/competitions.csv`: 공모전 데이터 (12건)
+
+### 로컬 LLM 연동 (`backend/services/ollama_service.py`)
+
+Ollama 로컬 추론 서버 연동 함수 추가 — Gemini 외 대체 추론 경로. 연결 실패·타임아웃 시 사용자 안내 메시지를 반환한다.
+
+> 생성물(`careerfit.db`, `rag_documents.json`)은 `preprocess.py`로 재생성 가능하므로 Git에 커밋하지 않는다.
+
+---
+
 ## 진행 현황
 
 - [x] **1일차**: 프로젝트 기획 및 개발 환경 세팅
@@ -167,6 +199,9 @@ LLM_MODEL=gemini-2.5-flash-lite
   - `/analyze` 라우터를 실제 LLM 서비스 호출로 연결 (하드코딩 목업 제거)
   - 라우터·진입점 코드 포맷 정리 (`health.py`, `jobs.py`, `main.py`)
   - 개발 워크플로우 문서 보강 (`docs/DEVELOPMENT_WORKFLOW.md`) — Git 개념·브랜치 설명 및 문제 상황별 대처 추가
-  - *(남은 작업: CSV 채용 데이터 적재, ChromaDB 벡터 인덱싱, RAG 검색 연결)*
+  - 데이터 전처리 파이프라인 구축 (`data/preprocess.py`) — CSV 로드·정제·중복 제거·스킬 표준화 → SQLite 저장 → RAG 문서 변환/JSON 저장
+  - 채용공고·공모전 데이터셋 추가 (`jobs.csv` 18건, `competitions.csv` 12건)
+  - Ollama 로컬 LLM 연동 서비스 추가 (`services/ollama_service.py`)
+  - *(남은 작업: ChromaDB 벡터 인덱싱, RAG 검색 연결)*
 - [ ] **4일차**: RAG 기반 서비스 + React UI
 - [ ] **5일차**: Docker + 포트폴리오 완성
