@@ -95,10 +95,10 @@ pip install -r requirements.txt
 
 ```powershell
 cd backend
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\venv\Scripts\activate
 uvicorn main:app --reload --port 8000
 ```
-
 서버 정상 실행 시:
 ```
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
@@ -145,8 +145,11 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 `.env.example` 참고. 실제 `.env` 파일은 Git에 올리지 않는다.
 
 ```
-GEMINI_API_KEY=your_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+MISTRAL_API_KEY=your_mistral_api_key_here 
+HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 MOCK_MODE=true   # true이면 Gemini 호출 없이 목업 응답 반환
+LLM_MODEL=gemini-2.5-flash-lite 
 ```
 
 ---

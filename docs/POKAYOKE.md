@@ -102,6 +102,18 @@ npm run dev
 
 ---
 
+## 7. venv 실행 안 될때 권한 우회 방법
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+위의 권한 부여 후
+
+```powershell
+venv\Scripts\Activate.ps1
+```
+
 ## 체크리스트 (매번 개발 시작 전)
 
 - [ ] VSCode 인터프리터가 `venv\Scripts\python.exe (3.12.x)` 인지 확인
