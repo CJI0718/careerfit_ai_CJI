@@ -13,3 +13,13 @@ chromadb==0.5.23
 pydantic==2.10.3
 
 sentence-transformers==5.6.0
+
+# 여러 LLM provider 호출용 (Ollama와 Mistral 호출에 필요)
+
+requests
+
+
+
+# HuggingFace 사용 시 필요
+
+huggingface_hub
