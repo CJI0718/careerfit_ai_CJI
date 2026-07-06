@@ -43,23 +43,40 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">CareerFit AI</h1>
-        <p className="text-slate-500 text-sm mb-8">취업·공모전 데이터 기반 맞춤형 AI 포트폴리오 코치</p>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50/40">
+      <div className="max-w-2xl mx-auto px-4 py-12">
+
+        {/* 헤더: 그라데이션 아이콘 배지 + 제목 */}
+        <header className="mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/25">
+              <span aria-hidden="true">🎯</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 leading-none">CareerFit AI</h1>
+              <p className="text-slate-500 text-sm mt-1.5">취업·공모전 데이터 기반 맞춤형 AI 포트폴리오 코치</p>
+            </div>
+          </div>
+        </header>
 
         <InputForm onSubmit={handleAnalyze} isLoading={isLoading} />
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          <div className="mt-5 flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+            <span aria-hidden="true">⚠️</span>
+            <span>{error}</span>
+          </div>
         )}
 
         {isLoading && (
-          <div className="mt-8 text-center text-slate-500">분석 중입니다...</div>
+          <div className="mt-8 flex items-center justify-center gap-3 text-slate-500">
+            <span className="w-5 h-5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden="true"></span>
+            <span className="text-sm">AI가 공고를 분석하고 있습니다...</span>
+          </div>
         )}
 
         {result && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-4 animate-fade-in-up">
             <ResultCard answer={result.answer} />
             {result.sources && result.sources.length > 0 && (
               <SourceCard sources={result.sources} />

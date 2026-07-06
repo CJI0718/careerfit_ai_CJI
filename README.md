@@ -322,6 +322,31 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
 **문서**
 - `docs/FRONTEND_GUIDE.md` — **Python 개발자를 위한** 프론트엔드 코드 해설(React/JSX 개념을 Python에 비유) + `SourceCard.jsx` 코드 리뷰(보안·응답구조·접근성)를 정리했다.
 
+### (프론트엔드) UI/UX 리디자인 — 발표용 세련화
+
+발표 가독성과 완성도를 높이기 위해 전체 UI를 리디자인했다. 아래 `design-skill.md`를 기준으로 삼았다.
+
+- **레이아웃 근본 정리**: `index.css`에 남아 있던 Vite 템플릿 잔재(`#root` 고정폭 1126px·테두리·중앙정렬 등)를 제거해, Tailwind 레이아웃이 제대로 적용되도록 했다. (이게 "변경이 화면에 안 보이던" 원인이기도 했다.)
+- **디자인 요소**: 부드러운 배경 그라데이션(slate→white→blue), 헤더의 그라데이션 아이콘 배지, 파랑→인디고 그라데이션 주 버튼, 결과·출처 카드의 컬러 헤더바(emerald/blue 아이콘 배지 + 구분선), 로딩 **스피너**, 결과 등장 **fade-in** 모션, 출처 카드 "N건" 카운트.
+- **접근성**: 장식 이모지 `aria-hidden`, 출처 목록을 `<ul>/<li>`로 전환, 낮은 대비(`slate-500→600`) 개선.
+- **원칙**: 그라데이션·모션·그림자는 **포인트(배지·버튼·진입 효과)에만 절제**해서 사용(화면 전체 남용 금지).
+
+### AI 도구 공통 harness 체계
+
+여러 AI 도구(Claude·Cursor·Gemini·Continue·Google AI Studio)가 규칙을 각자 복붙하며 어긋나는 문제를 막기 위해, 규칙을 `harness/` 한 곳으로 모으고 각 도구 설정은 harness를 가리키는 **얇은 게이트**로 통일했다.
+
+| 파일/폴더 | 역할 |
+|-----------|------|
+| `harness/MAIN_HARNESS.md` | 공통 운영 매뉴얼(절대 규칙·작업 흐름·API 계약·토큰 절약) |
+| `harness/ROUTING.md` | 요청 유형 → 참조할 agent/skill/check 파일 라우팅 |
+| `harness/agents/` | 역할별 5종: `ai-tutor`·`ui-designer`·`react-reviewer`·`api-connector`·`token-optimizer` |
+| `harness/checks/security-check.md` | 보안 체크리스트(API Key·`.env` 노출 방지) |
+| `harness/skills/design-skill.md` | 디자인 시스템(팔레트·타이포그래피·컴포넌트·레이아웃·금지) |
+| 진입 게이트 | `CLAUDE.md`·`.cursor/rules`·`AGENTS.md`·`GEMINI.md`·`Google_AI_STUDIO.md`·`.continue/rules` |
+
+- 효과: 규칙을 harness **한 곳만 고치면 모든 도구에 반영**된다(중복·불일치 제거).
+- `design-skill.md`는 이번 UI 리디자인의 실제 기준이 되었고, 팔레트(파랑·인디고·초록·slate)와 금지 조항을 코드와 일치시켰다.
+
 ---
 
 ## 진행 현황
@@ -341,5 +366,7 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
   - **후반부**: ChromaDB 저장·검색 구현, 한국어 임베딩(`ko-sroberta`) 적용, metadata 사전 필터(`job_type`·`deadline_month`·`company_type`), `/analyze`에 RAG 연결 → 출처 기반 답변 완성
   - **LLM provider 전환**: `.env`의 `LLM_MODEL`만으로 Gemini ↔ Mistral 전환 지원 (`_call_gemini`/`_call_mistral` 분기)
   - **프론트엔드 초기 구성**: Tailwind v3 설정을 `frontend/`로 통일, React 컴포넌트 구조(`App`·`InputForm`·`ResultCard`·`SourceCard`) 및 `/analyze` 연동, `docs/FRONTEND_GUIDE.md` 작성(Python 개발자용 해설 + 코드 리뷰)
+  - **UI/UX 리디자인**: Vite 템플릿 잔재 제거 후 발표용 세련화(그라데이션·아이콘 배지·스피너·fade-in·접근성 개선), `design-skill.md` 기준 적용
+  - **AI 도구 공통 harness 도입**: `harness/`(운영 매뉴얼·라우팅·agents·checks·skills)로 규칙 중앙화, 각 도구 설정을 얇은 게이트로 통일
 - [ ] **5일차**: UI 다듬기 + Docker + 포트폴리오 완성
   - *(남은 작업: UI 스타일 보강·접근성 개선, Docker 컨테이너화)*
