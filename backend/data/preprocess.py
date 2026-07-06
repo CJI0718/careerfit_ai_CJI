@@ -2,6 +2,7 @@ import pandas as pd
 import sqlite3
 import json
 import os
+from datetime import datetime  # created_at(최초 저장일) 부여 및 마감일 파싱에 사용
 
 
 # ─── 1. 파일 경로 설정
@@ -78,7 +79,8 @@ def handle_missing(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["title", "required_skills"])
 
     # 나머지 텍스트 컬럼은 빈 문자열로 채웁니다
-    text_cols = ["preferred_skills", "description", "company", "job_type"]
+    # deadline 포함: 마감일이 비면 NaN → str 변환 시 "nan"이 되어 metadata를 오염시키므로 빈 문자열로 채움
+    text_cols = ["preferred_skills", "description", "company", "job_type", "deadline"]
     for col in text_cols:
         if col in df.columns:
             df[col] = df[col].fillna("")
@@ -254,15 +256,85 @@ def query_sqlite(db_path: str) -> None:
 
     conn.close()
 
-def convert_to_rag_documents(df: pd.DataFrame) -> list:
+# ─── metadata 확장용 헬퍼 2개 ───
+
+def to_deadline_month(deadline: str) -> str:
+    """
+    마감일 문자열에서 '연-월(YYYY-MM)'만 뽑아냅니다.
+    → ChromaDB에서 "9월 마감 공고" 같은 필터의 검색 키로 씁니다.
+
+    회계 비유: 마감일이라는 전표에서 '귀속 월(月)' 계정만 따로 분개해 두는 것.
+
+    처리 예시:
+      "2026-09-15" → "2026-09"   (정상 ISO 형식)
+      "26.09.10"   → "2026-09"   (11번 공고: 축약 형식도 보정 시도)
+      ""           → ""          (12번 공고: 마감일 없음 → 필터에서 자연히 제외)
+    """
+    s = str(deadline).strip()
+    if not s:
+        # 빈 마감일: 억지로 값을 만들지 않고 빈 문자열 반환 (오염 데이터를 조용히 지어내지 않음)
+        return ""
+
+    # 알려진 날짜 형식을 순서대로 시도 (ISO 표준 → YY.MM.DD 축약형)
+    for fmt in ("%Y-%m-%d", "%y.%m.%d"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m")
+        except ValueError:
+            continue  # 이 형식이 아니면 다음 형식 시도
+
+    # 어떤 형식에도 안 맞으면 빈 문자열 (알 수 없는 형식은 필터 대상에서 제외)
+    return ""
+
+
+def load_existing_created_at(json_path: str) -> dict:
+    """
+    기존 rag_documents.json을 '취득원가 장부'처럼 읽어,
+    "회사명||직무명 → created_at" 지도를 만듭니다.
+    → 이미 등록됐던 공고의 '최초 저장일'을 이월(carry-over)하기 위한 조회용 지도.
+
+    식별 키(identity)는 사용자가 정한 대로 company + title 조합을 씁니다.
+    (remove_duplicates()의 중복 판단 기준과 동일 → 일관성 유지)
+
+    - 파일이 아직 없으면(=최초 실행) 빈 지도를 반환합니다.
+    """
+    if not os.path.exists(json_path):
+        return {}  # 최초 실행: 이월할 과거 기록이 없음
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        old_docs = json.load(f)
+
+    created_map = {}
+    for doc in old_docs:
+        meta = doc.get("metadata", {})
+        # "회사명||직무명"을 키로 사용 ('||'는 회사/직무명에 안 쓰이는 구분자)
+        key = f"{meta.get('company', '')}||{meta.get('title', '')}"
+        created = meta.get("created_at", "")
+        if created:  # created_at이 기록돼 있던 기존 문서만 지도에 등록
+            created_map[key] = created
+
+    return created_map
+
+
+def convert_to_rag_documents(df: pd.DataFrame, json_path: str) -> list:
     """
     DataFrame의 각 행을 RAG 검색에 적합한 자연어 문서로 변환합니다.
 
     요리 비유:
     냉장고의 재료 목록을 셰프가 바로 읽을 수 있는 레시피 카드로 변환합니다.
+
+    json_path: 기존 rag_documents.json 경로.
+               → 이 파일에서 과거 created_at을 읽어와 최초 저장일을 이월합니다.
     """
     print("\n=== RAG 문서 변환 ===")
     documents = []
+
+    # (1) 기존 문서에서 '최초 저장일 지도'를 먼저 불러옵니다 (저장은 이 뒤에 일어나므로 안전)
+    created_map = load_existing_created_at(json_path)
+    today = datetime.now().strftime("%Y-%m-%d")  # 새 공고에 부여할 오늘 날짜
+
+    # 이월 vs 신규 개수 집계용 (변환 결과를 눈으로 검증하기 위한 카운터)
+    carried_over = 0
+    newly_added = 0
 
     for _, row in df.iterrows():
         # 자연어 문서 텍스트 생성
@@ -273,14 +345,34 @@ def convert_to_rag_documents(df: pd.DataFrame) -> list:
             f"업무 내용: {row.get('description', '정보 없음')}"
         )
 
+        company = str(row.get("company", ""))
+        title = str(row.get("title", ""))
+
+        # (2) 이 공고의 '최초 저장일(created_at)' 결정
+        #     식별 키 "회사명||직무명"으로 과거 기록을 조회
+        #       - 지도에 있으면  → 과거 날짜 그대로 이월 (기존 공고: 취득원가 유지)
+        #       - 지도에 없으면  → 오늘 날짜 부여        (신규 공고)
+        identity_key = f"{company}||{title}"
+        if identity_key in created_map:
+            created_at = created_map[identity_key]
+            carried_over += 1
+        else:
+            created_at = today
+            newly_added += 1
+
         # metadata: 검색 결과를 필터링하거나 출처를 표시할 때 사용합니다
+        # ※ ChromaDB metadata 값은 모두 str이어야 하므로 전부 문자열로 변환
         metadata = {
             "id": str(row.get("id", "")),
-            "company": str(row.get("company", "")),
-            "title": str(row.get("title", "")),
+            "company": company,
+            "title": title,
             "job_type": str(row.get("job_type", "")),
             "deadline": str(row.get("deadline", "")),
-            "source": "jobs.csv"
+            "source": "jobs.csv",
+            # ── 확장 필드 3개 ──
+            "company_type": str(row.get("company_type", "")),          # 요구①: "스타트업 공고만" 필터
+            "deadline_month": to_deadline_month(row.get("deadline", "")),  # 요구②: "9월 마감" 필터 (헬퍼로 안전 변환)
+            "created_at": created_at,                                   # 요구③: 최초 저장일 (이월 처리됨)
         }
 
         documents.append({
@@ -289,7 +381,9 @@ def convert_to_rag_documents(df: pd.DataFrame) -> list:
             "doc_id": f"job_{row.get('id', '')}"  # ChromaDB의 고유 ID
         })
 
-    print(f"   ✅ {len(documents)}개 문서 변환 완료")
+    # (3) 이월/신규 집계를 출력해 created_at 처리가 의도대로 됐는지 눈으로 검증
+    print(f"   ✅ {len(documents)}개 문서 변환 완료 "
+          f"(created_at 이월: {carried_over}개, 신규: {newly_added}개)")
     print("\n   [첫 번째 문서 미리보기]")
     print(f"   ID: {documents[0]['doc_id']}")
     print(f"   텍스트: {documents[0]['text'][:100]}...")
@@ -331,8 +425,8 @@ if __name__ == "__main__":
     # 7. 저장 결과 조회
     query_sqlite(DB_PATH)
 
-    # 8. RAG 문서 변환
-    rag_documents = convert_to_rag_documents(df_jobs)
+    # 8. RAG 문서 변환 (RAG_JSON을 넘겨 기존 created_at을 이월)
+    rag_documents = convert_to_rag_documents(df_jobs, RAG_JSON)
 
     # 9. RAG 문서 JSON 저장
     save_rag_documents(rag_documents, RAG_JSON)
