@@ -298,6 +298,30 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
 
 > 주의: `PROVIDER`는 서버 시작 시점에 한 번 계산되므로, `.env`의 `LLM_MODEL`을 바꾸면 **서버를 재시작**해야 적용된다. (`--reload`는 `.py` 변경만 감지하고 `.env`는 감지하지 못함.)
 
+### (프론트엔드) React UI 초기 구성
+
+완성된 `/analyze` RAG API를 실제 화면에서 쓰기 위한 프론트엔드 초기 구성을 진행했다. `frontend/`(Vite + React) 기반이다.
+
+**환경 설정**
+- **Tailwind CSS v3** 설정을 `frontend/`로 통일(설치·`tailwind.config.js`·`postcss.config.js`·`index.css`의 `@tailwind` 지시어). 루트에 잘못 생성됐던 설정 잔재는 제거했다.
+- `frontend`는 ESM(`"type": "module"`)이므로 설정 파일은 `export default` 형식을 쓴다.
+
+**컴포넌트 구조** (`frontend/src/`)
+
+| 파일 | 역할 |
+|------|------|
+| `main.jsx` | 진입점 — `index.html`의 `#root`에 `App`을 렌더 |
+| `App.jsx` | 두뇌 — 상태(`result`·`isLoading`·`error`) 관리, `fetch`로 `POST /analyze` 호출, 상태에 따라 하위 컴포넌트 렌더 |
+| `components/InputForm.jsx` | 입력 폼(전공·스킬·직무), 제출 시 `App`의 핸들러 호출 |
+| `components/ResultCard.jsx` | AI 분석 답변(`answer`) 표시 |
+| `components/SourceCard.jsx` | 참고한 공고 출처(`sources`) 표시 |
+
+- 흐름: `InputForm` 입력 → `App.handleAnalyze`가 백엔드 `/analyze` 호출 → 응답 `{answer, sources}`를 `ResultCard`·`SourceCard`로 표시.
+- **보안**: API Key는 프론트에 두지 않고 **백엔드(`.env`)를 경유**해서만 LLM을 호출한다(프론트 코드는 브라우저에 그대로 노출되므로).
+
+**문서**
+- `docs/FRONTEND_GUIDE.md` — **Python 개발자를 위한** 프론트엔드 코드 해설(React/JSX 개념을 Python에 비유) + `SourceCard.jsx` 코드 리뷰(보안·응답구조·접근성)를 정리했다.
+
 ---
 
 ## 진행 현황
@@ -316,7 +340,6 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
   - **전반부**: RAG 필터링용 metadata 확장(`company_type`·`deadline_month`·`created_at`), `created_at` 이월 로직, 회계법인 공고 3건 추가(감사·택스·FAS), 결측 마감일 정리 — 원본 21건 → 정제 후 18건
   - **후반부**: ChromaDB 저장·검색 구현, 한국어 임베딩(`ko-sroberta`) 적용, metadata 사전 필터(`job_type`·`deadline_month`·`company_type`), `/analyze`에 RAG 연결 → 출처 기반 답변 완성
   - **LLM provider 전환**: `.env`의 `LLM_MODEL`만으로 Gemini ↔ Mistral 전환 지원 (`_call_gemini`/`_call_mistral` 분기)
-  - *(남은 작업: React UI)*
-- [ ] **5일차**: React UI + Docker + 포트폴리오 완성
-  - 프론트엔드 환경 정비: Tailwind CSS v3 설정을 `frontend/`로 통일(설치·`tailwind.config.js`·`postcss.config.js`·`index.css` 지시어), 루트에 잘못 생성된 설정 잔재 제거
-  - *(남은 작업: React 화면 구현, `/analyze` 연동, Docker)*
+  - **프론트엔드 초기 구성**: Tailwind v3 설정을 `frontend/`로 통일, React 컴포넌트 구조(`App`·`InputForm`·`ResultCard`·`SourceCard`) 및 `/analyze` 연동, `docs/FRONTEND_GUIDE.md` 작성(Python 개발자용 해설 + 코드 리뷰)
+- [ ] **5일차**: UI 다듬기 + Docker + 포트폴리오 완성
+  - *(남은 작업: UI 스타일 보강·접근성 개선, Docker 컨테이너화)*
