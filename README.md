@@ -49,7 +49,7 @@ CareerFit AI는 정보가 부족한 미지정 회계사를 위해 "곧바로 매
 | 백엔드 | Python 3.12, FastAPI |
 | AI API | Gemini 2.5 Flash-Lite |
 | 데이터 | Pandas, SQLite, ChromaDB |
-| 프론트엔드 | React, Vite |
+| 프론트엔드 | React, Vite, Tailwind CSS v3 |
 | 실행 환경 | Docker |
 
 
@@ -298,4 +298,6 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
   - **후반부**: ChromaDB 저장·검색 구현, 한국어 임베딩(`ko-sroberta`) 적용, metadata 사전 필터(`job_type`·`deadline_month`·`company_type`), `/analyze`에 RAG 연결 → 출처 기반 답변 완성
   - **LLM provider 전환**: `.env`의 `LLM_MODEL`만으로 Gemini ↔ Mistral 전환 지원 (`_call_gemini`/`_call_mistral` 분기)
   - *(남은 작업: React UI)*
-- [ ] **5일차**: Docker + 포트폴리오 완성
+- [ ] **5일차**: React UI + Docker + 포트폴리오 완성
+  - 프론트엔드 환경 정비: Tailwind CSS v3 설정을 `frontend/`로 통일(설치·`tailwind.config.js`·`postcss.config.js`·`index.css` 지시어), 루트에 잘못 생성된 설정 잔재 제거
+  - *(남은 작업: React 화면 구현, `/analyze` 연동, Docker)*
