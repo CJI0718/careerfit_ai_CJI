@@ -268,6 +268,17 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
 
 **의존성 추가**: 한국어 임베딩용 `sentence-transformers` (`requirements.txt`).
 
+### LLM provider 전환 지원 (Gemini ↔ Mistral)
+
+답변 생성 모델을 코드 수정 없이 `.env`의 `LLM_MODEL` 값만으로 바꿀 수 있게 했다. (초기엔 `gemini-2.5-flash-lite`가 하드코딩돼 `.env`를 바꿔도 반영되지 않았음.)
+
+- `get_provider_and_model()`: `LLM_MODEL` 값의 접두어를 보고 provider를 판별한다. 예) `mistral-small-latest`→mistral, `ollama:...`→ollama, `huggingface:...`→huggingface, 그 외→gemini.
+- `get_llm_response()`: 판별된 provider에 따라 `_call_gemini()`(SDK) / `_call_mistral()`(REST, `requests`)로 분기 호출한다.
+- **검색(retrieval)은 provider와 무관**하다. 벡터 검색은 항상 ko-sroberta로 동작하고, 바뀌는 것은 답변 생성(generation) 부분뿐이다.
+- 현재 **Gemini·Mistral만 실호출** 구현. `ollama`/`huggingface`는 자리만 확보(미구현 안내 반환).
+
+> 주의: `PROVIDER`는 서버 시작 시점에 한 번 계산되므로, `.env`의 `LLM_MODEL`을 바꾸면 **서버를 재시작**해야 적용된다. (`--reload`는 `.py` 변경만 감지하고 `.env`는 감지하지 못함.)
+
 ---
 
 ## 진행 현황
@@ -285,5 +296,6 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
 - [x] **4일차**: RAG 파이프라인 완성
   - **전반부**: RAG 필터링용 metadata 확장(`company_type`·`deadline_month`·`created_at`), `created_at` 이월 로직, 회계법인 공고 3건 추가(감사·택스·FAS), 결측 마감일 정리 — 원본 21건 → 정제 후 18건
   - **후반부**: ChromaDB 저장·검색 구현, 한국어 임베딩(`ko-sroberta`) 적용, metadata 사전 필터(`job_type`·`deadline_month`·`company_type`), `/analyze`에 RAG 연결 → 출처 기반 답변 완성
+  - **LLM provider 전환**: `.env`의 `LLM_MODEL`만으로 Gemini ↔ Mistral 전환 지원 (`_call_gemini`/`_call_mistral` 분기)
   - *(남은 작업: React UI)*
 - [ ] **5일차**: Docker + 포트폴리오 완성
