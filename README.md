@@ -117,6 +117,25 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 
 > `/docs` 페이지에서 각 엔드포인트의 **Try it out** 버튼으로 요청을 직접 보내고 응답을 확인할 수 있다.
 
+### 5. 프론트엔드 실행 (React + Vite + Tailwind)
+
+프론트엔드는 `frontend/` 폴더에 있으며 Node.js 기반이다. (Vite 8 기준 **Node.js 20 이상** 권장)
+
+```powershell
+cd frontend
+npm install          # 최초 1회 — 의존성 설치 (React, Vite, Tailwind CSS v3 등)
+npm run dev          # 개발 서버 실행 → http://localhost:5173
+```
+
+- **Tailwind CSS v3**를 사용하며, 설정은 모두 `frontend/` 안에 위치한다:
+  - `tailwind.config.js` — 스캔 대상(`content`) 지정
+  - `postcss.config.js` — Tailwind + autoprefixer 연결
+  - `src/index.css` 최상단의 `@tailwind base/components/utilities` 지시어
+- 설정 파일은 `frontend`가 ESM(`"type": "module"`)이므로 `export default` 형식을 쓴다.
+- 프로덕션 빌드는 `npm run build` (결과물 `frontend/dist/`는 재생성 가능하므로 Git에 커밋하지 않는다).
+
+> 백엔드(8000)와 프론트엔드(5173)는 **별도 터미널**에서 각각 실행한다.
+
 ---
 
 ## 2일차 구현 내용
