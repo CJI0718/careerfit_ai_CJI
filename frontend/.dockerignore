@@ -1,0 +1,16 @@
+# Docker 빌드 컨텍스트에서 제외 (용량·보안)
+node_modules
+dist
+
+# 환경변수 실제 파일은 이미지에 넣지 않는다 (.env.example만 참고용)
+.env
+.env.*
+!.env.example
+
+# 기타
+.git
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log*
+*.md

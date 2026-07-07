@@ -1,0 +1,14 @@
+# nginx 이미지가 시작 시 이 템플릿의 ${PORT}를 환경변수 값으로 치환한다.
+# ($uri 등 nginx 내부 변수는 환경변수가 아니므로 치환되지 않는다.)
+server {
+    listen       ${PORT};
+    server_name  _;
+
+    root   /usr/share/nginx/html;
+    index  index.html;
+
+    # SPA 라우팅: 존재하지 않는 경로도 index.html로 폴백해 React 라우터가 처리
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

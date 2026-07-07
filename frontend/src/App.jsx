@@ -2,9 +2,8 @@ import { useState } from "react";
 import InputForm from "./components/InputForm";
 import ResultCard from "./components/ResultCard";
 import SourceCard from "./components/SourceCard";
-
-const API_BASE = "http://localhost:8000";
-// ⚠️ API Key는 절대 여기에 넣지 않습니다
+import { analyzeCareer } from "./api";
+// ⚠️ API 주소는 api.js의 API_BASE_URL로 관리한다. API Key는 절대 프론트엔드에 넣지 않는다.
 
 function App() {
   const [result, setResult] = useState(null);
@@ -17,18 +16,11 @@ function App() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE}/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          major: formData.major,
-          skills: formData.skills,
-          job_type: formData.jobType,
-        }),
+      const data = await analyzeCareer({
+        major: formData.major,
+        skills: formData.skills,
+        job_type: formData.jobType,
       });
-
-      if (!response.ok) throw new Error(`서버 오류: ${response.status}`);
-      const data = await response.json();
       setResult(data);
 
     } catch (err) {
