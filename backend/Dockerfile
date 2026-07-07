@@ -46,6 +46,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
+# chroma_db(벡터DB)는 재생성물이라 Git에 없어 이미지에도 복사되지 않는다.
+# 앱이 시작 시 이 경로를 새로 만드는데, /app은 root 소유라 그대로면 생성이 실패한다.
+# → 디렉토리를 미리 만들고 appuser 소유로 지정한다. (Render 등 배포 환경에서 필수)
+RUN mkdir -p /app/chroma_db && chown appuser:appuser /app/chroma_db
+
 # Switch to the non-privileged user to run the application.
 USER appuser
 
