@@ -16,6 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
+ENV ANONYMIZED_TELEMETRY=False
 
 # appuser 홈이 /nonexistent(쓰기 불가)라, ChromaDB 기본 임베딩(all-MiniLM) 모델을
 # 받아 둘 쓰기 가능한 위치를 HOME으로 지정한다. (chroma는 ~/.cache/chroma 에 내려받음)
@@ -58,6 +59,14 @@ USER appuser
 # --chown: 파일 소유자를 appuser로 지정. 이래야 런타임에 appuser가
 # chroma_db(벡터DB) 폴더에 쓸 수 있음. 없으면 root 소유가 되어 Permission denied.
 COPY --chown=appuser:appuser . .
+
+# RAG 데이터 산출물은 배포 환경에서 누락될 수 있으므로 빌드 시 CSV에서 재생성한다.
+# 이렇게 하면 Render가 GitHub 소스만으로 빌드해도 rag_documents.json과 SQLite DB가 이미지 안에 생긴다.
+RUN python data/preprocess.py
+
+# ChromaDB 컬렉션을 빌드 시 미리 채워 첫 /analyze 요청에서 파일 누락/모델 다운로드가 터지지 않게 한다.
+# 기본 임베딩 모델 다운로드와 문서 적재를 이미지에 포함한다.
+RUN python -c "from services.rag_service import get_or_create_collection; c = get_or_create_collection(); print(f'ChromaDB warmup complete: {c.count()} documents')"
 
 # Expose the port that the application listens on.
 EXPOSE 8000

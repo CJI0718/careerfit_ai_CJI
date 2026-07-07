@@ -1,117 +1,68 @@
-# CareerFit AI — 일차별 체크리스트
+﻿# CareerFit AI 제출 체크리스트
 
+최종 제출 전에 저장소, 코드 동작, 문서, 보안을 점검한다.
+상태 기준일: 2026-07-07
 
+## Step 3. 제출 체크리스트 최종 확인
 
-## 1일차
+### GitHub Repository
 
-- [ ] careerfitai/ 폴더 구조 생성 완료
+- [x] `careerfit_ai_CJI` Repository가 Public으로 설정되어 있는가?
+  - 확인: GitHub API `private=false`.
+- [ ] `README.md`가 GitHub에서 정상 렌더링되는가?
+  - 최종 README 커밋/푸시 후 GitHub 화면에서 Mermaid 렌더링까지 확인한다.
+- [x] `backend/`, `frontend/`, `docs/` 폴더가 모두 있는가?
+- [x] `.env` 파일이 Repository에 없는가?
+  - 확인: Git 추적 파일에는 `.env.example`, `backend/.env.example`, `frontend/.env.example`만 있음.
+- [x] `chroma_db/`가 Repository에 없는가?
+  - 확인: `backend/chroma_db/`는 `.gitignore` 및 `backend/.dockerignore`에서 제외.
+- [x] `Dockerfile`이 `backend/` 폴더 안에 있는가?
 
-- [ ] .gitignore에 .env 포함 확인
+### 코드 동작
 
-- [ ] .env.example 파일 생성 완료
+- [x] `uvicorn`으로 FastAPI 실행 후 `/health` 응답 확인
+  - 확인: 로컬 uvicorn 실행 후 `http://127.0.0.1:8000/health` 200 응답.
+- [x] `/analyze`가 `sources` 포함 응답을 반환하는가?
+  - 확인: Render 백엔드 `/analyze` 응답에 `answer`, `sources` 포함.
+- [x] React UI에서 결과 카드·출처 카드가 출력되는가?
+  - 코드 확인: `App.jsx`가 `ResultCard`, `SourceCard`를 조건 렌더링.
+  - 최종 화면 확인은 프론트 배포 URL에서 직접 수행한다.
+- [x] Docker build가 성공하는가?
+  - 확인: `docker build -t careerfit-ai ./backend` 성공.
+- [x] Docker run 후 `/health` 응답이 오는가?
+  - 확인: 컨테이너 실행 후 `/health` 200 응답.
 
-- [ ] .cursor/rules/project-rules.mdc 작성 완료
+### 문서
 
-- [ ] docs/AI_TA_RULES.md 작성 완료
+- [x] README에 실행 방법이 있는가?
+- [x] `docs/` 폴더에 프로젝트 문서가 4개 이상 있는가?
+- [x] `harness/` 폴더에 하네스 파일이 4개 이상 있는가?
+- [x] 구현하지 않은 기능이 "향후 개선"으로 분리되어 있는가?
 
-- [ ] docs/PROMPTS.md 바이브코딩 규칙 3개 이상 작성
+### 보안
 
-- [ ] docs/CHECKLIST.md 작성 완료
+- [x] `.gitignore`에 `.env`가 있는가?
+- [x] 코드 어디에도 실제 API Key가 직접 포함되어 있지 않은가?
+  - 확인: 실제 키 파일은 Git 추적 대상이 아님. `.env.example`에는 placeholder만 둔다.
+- [x] `.env.example` 파일이 있는가?
 
-- [ ] docs/EVAL_QUESTIONS.md 작성 완료
+## 최종 제출 직전 명령어
 
-- [ ] docs/PROJECT_PLAN.md 작성 완료
+```powershell
+# Git 추적 파일 확인
+git ls-files
 
-- [ ] GitHub Repository 생성 및 초기 커밋 완료
+# 실제 .env가 추적되지 않는지 확인
+git ls-files | Select-String -Pattern '(^|/|\\)\.env($|\.)'
 
-- [ ] 피어그룹 멤버 이름·GitHub URL 기록 완료
+# 프론트엔드 빌드 확인
+cd frontend
+npm.cmd run build
 
+# 백엔드 문법 확인
+cd ..
+python -m py_compile backend/main.py
 
-
-## 2일차
-
-- [ ] Python 가상환경(venv) 생성 및 활성화 확인
-
-- [ ] requirements.txt 생성 및 패키지 설치 완료
-
-- [ ] .env 파일 생성 및 GEMINI_API_KEY 입력 완료
-
-- [ ] FastAPI /health 실행 확인 (localhost:8000/health)
-
-- [ ] FastAPI /docs 접속 확인 (localhost:8000/docs)
-
-- [ ] /jobs API 목업 응답 확인
-
-- [ ] /analyze API 기본 구조 작성 완료
-
-- [ ] Gemini API 최초 응답 확인
-
-- [ ] README.md 골격 작성 완료
-
-- [ ] GitHub 커밋 완료 (.env 미포함 확인)
-
-
-
-## 3일차
-
-- [ ] 강사 제공 CSV 데이터 확인 완료
-
-- [ ] Pandas로 CSV 읽기 성공
-
-- [ ] 결측치·중복 확인 완료
-
-- [ ] 스킬 키워드 표준화 완료
-
-- [ ] SQLite DB 생성 및 저장 확인
-
-- [ ] SQLite 조회 확인
-
-- [ ] RAG 문서 구조로 변환 완료
-
-- [ ] ChromaDB 컬렉션 생성 및 문서 저장 확인
-
-- [ ] metadata 설계 완료
-
-- [ ] GitHub 커밋 완료
-
-
-
-## 4일차
-
-- [ ] ChromaDB 질문 기반 검색 확인
-
-- [ ] 검색 결과 품질 점검 완료
-
-- [ ] /analyze API RAG 응답으로 변경 완료
-
-- [ ] React 프로젝트 생성 및 실행 확인 (localhost:5173)
-
-- [ ] /analyze API 연결 완료
-
-- [ ] 결과 카드 화면 출력 확인
-
-- [ ] 출처 카드 화면 출력 확인
-
-- [ ] 로컬 통합 테스트 완료
-
-- [ ] GitHub 커밋 완료
-
-
-
-## 5일차
-
-- [ ] Dockerfile 작성 완료
-
-- [ ] Docker build 성공
-
-- [ ] Docker run 후 /health 접속 확인
-
-- [ ] README 최종화 완료 (문제정의·데이터·구현·검증 4단계)
-
-- [ ] .env 미포함 보안 확인
-
-- [ ] 최종 하네스 파일 업데이트 완료
-
-- [ ] GitHub 최종 커밋 완료
-
-- [ ] 팀 리플렉션 발표 준비 완료
+# Docker 백엔드 빌드 확인
+docker build -t careerfit-ai ./backend
+```
