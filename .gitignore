@@ -31,8 +31,8 @@ backend/chroma_db/
 
 
 # 전처리 생성물 (preprocess.py로 재생성 가능)
-
-backend/data/rag_documents.json
+# ※ rag_documents.json은 Render 배포 시 인덱스 재생성 소스로 필요하므로 커밋한다.
+#    (chroma_db는 재생성물이라 계속 제외)
 
 
 

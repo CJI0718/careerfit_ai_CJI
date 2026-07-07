@@ -395,7 +395,16 @@ docker run --rm -p 8000:8000 --env-file .env careerfit-ai
 
 - API Key는 **이미지에 포함하지 않고** 실행 시 `--env-file .env`로 주입한다. `.env`는 `.dockerignore`·`.gitignore` 양쪽에서 제외된다.
 
-> **배포 데이터 주의**: `chroma_db/`와 `rag_documents.json`은 재생성물이라 Git에서 제외된다. 로컬 `docker build`는 이들을 이미지에 담지만, **Render처럼 Git 저장소에서 빌드하는 환경에선 포함되지 않으므로** 벡터 데이터를 별도로 포함하거나 시작 시 재생성하도록 처리해야 한다.
+> **배포 데이터**: `chroma_db/`는 재생성물이라 Git에서 제외하되, **인덱스 재생성 소스인 `rag_documents.json`은 커밋**한다. Render처럼 Git 저장소에서 빌드하는 환경에선 앱이 시작 시 이 JSON으로 벡터 인덱스를 다시 만든다.
+
+### 배포용 임베딩 전환 — torch 제거
+
+무료 클라우드(Render 512MB)에서 `sentence-transformers`가 끌고 오는 **torch·ko-sroberta 모델이 메모리·이미지 용량을 초과**해 배포가 어려웠다. 이를 위해 임베딩을 **ChromaDB 기본 모델(all-MiniLM-L6-v2, onnxruntime 기반)**로 전환했다.
+
+- `sentence-transformers`·`huggingface_hub` 의존성 제거 → torch가 사라져 대폭 경량화
+- `rag_service.py`·`test_search.py`에서 `embedding_function`을 지정하지 않아 기본 임베딩 사용 (벡터 차원 768→384라 `chroma_db`는 재생성)
+- 네이티브 Python 배포를 위해 `backend/.python-version`(3.12) 추가 — Render 기본값 3.14는 일부 패키지 빌드 실패
+- **트레이드오프**: 기본 모델은 영어 위주라 **한국어 검색 품질이 낮다.** 4일차에 ko-sroberta로 개선했던 부분을 배포 우선으로 되돌린 절충이며, 추후 Gemini 임베딩 API 등으로 품질·경량화를 양립시킬 수 있다.
 
 ---
 

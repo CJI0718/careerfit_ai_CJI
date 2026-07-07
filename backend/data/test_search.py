@@ -1,5 +1,4 @@
 import chromadb
-from chromadb.utils import embedding_functions
 import json
 import os
 
@@ -7,14 +6,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RAG_JSON = os.path.join(BASE_DIR, "rag_documents.json")
 CHROMA_PATH = os.path.join(os.path.dirname(BASE_DIR), "chroma_db")
 
-# 한국어 특화 임베딩 모델.
-# ChromaDB 기본 모델(all-MiniLM-L6-v2)은 영어 전용이라 한국어 공고 검색이 무작위에 가까웠음.
-# → 한국어 문장 유사도로 튜닝된 ko-sroberta로 교체해 질문↔공고 의미 매칭을 개선한다.
-# ※ add(저장)와 query(검색)가 반드시 '같은' 임베딩 함수를 써야 의미공간이 일치한다.
-EMBEDDING_MODEL = "jhgan/ko-sroberta-multitask"
-korean_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name=EMBEDDING_MODEL
-)
+# 임베딩은 ChromaDB 기본 모델(all-MiniLM-L6-v2, 384차원)을 쓴다.
+# torch가 필요 없어(onnxruntime 기반) 가볍고 배포에 유리하다.
+# 단, 영어 위주라 한국어 검색 품질은 낮다. (배포 우선 절충 — rag_service.py와 동일 방침)
+# ※ 저장(add)과 검색(query)이 같은 기본 함수를 쓰므로 의미공간(차원)은 항상 일치한다.
 
 
 def load_rag_documents(json_path: str) -> list:
@@ -38,20 +33,19 @@ def save_to_chromadb(documents: list, chroma_path: str) -> chromadb.Collection:
     # chroma_path 폴더에 자동으로 DB 파일이 생성됩니다
     client = chromadb.PersistentClient(path=chroma_path)
 
-    # 임베딩 모델을 바꾸면 벡터 차원(384→768)이 달라져 기존 벡터와 섞을 수 없다.
-    # → 기존 컬렉션을 통째로 삭제하고, 한국어 임베딩 함수로 새로 만든다.
+    # 임베딩을 바꾸면 벡터 차원이 달라져 기존 벡터와 섞을 수 없다.
+    # → 기존 컬렉션을 통째로 삭제하고 새로 만든다.
     try:
         client.delete_collection(name="careerfit_jobs")
-        print("   기존 컬렉션 발견 → 삭제 후 재생성합니다 (임베딩 모델 변경)")
+        print("   기존 컬렉션 발견 → 삭제 후 재생성합니다")
     except Exception:
         pass  # 최초 실행: 삭제할 컬렉션이 없음
 
-    # 컬렉션 생성 시 한국어 임베딩 함수를 명시적으로 연결
-    # → 이후 add/query 모두 이 함수로 벡터를 만든다 (의미공간 일치 보장)
+    # embedding_function 미지정 → ChromaDB 기본 임베딩(all-MiniLM, 384차원) 사용
+    # → 이후 add/query 모두 같은 기본 함수로 벡터를 만든다 (의미공간 일치 보장)
     collection = client.create_collection(
         name="careerfit_jobs",
         metadata={"description": "CareerFit AI 취업·공모전 데이터"},
-        embedding_function=korean_ef,
     )
 
     # 문서 저장 (배치 처리)

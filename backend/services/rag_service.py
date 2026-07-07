@@ -1,5 +1,4 @@
 import chromadb
-from chromadb.utils import embedding_functions
 import json
 from pathlib import Path
 
@@ -9,13 +8,10 @@ RAG_JSON = str(BASE_DIR / "data" / "rag_documents.json")
 
 client = chromadb.PersistentClient(path=CHROMA_PATH)
 
-# 저장(test_search.py)에서 쓴 것과 '동일한' 한국어 임베딩 함수를 써야 한다.
-# 지정하지 않으면 ChromaDB 기본 영어 모델(all-MiniLM, 384차원)로 되돌아가,
-# 저장된 ko-sroberta 벡터(768차원)와 차원이 달라 검색이 실패한다.
-EMBEDDING_MODEL = "jhgan/ko-sroberta-multitask"
-korean_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name=EMBEDDING_MODEL
-)
+# 임베딩 함수를 지정하지 않으면 ChromaDB 기본 모델(all-MiniLM-L6-v2, 384차원)을 쓴다.
+# 이 모델은 onnxruntime 기반이라 torch가 필요 없어 가볍고 배포(무료 인스턴스)에 유리하다.
+# 단, 영어 위주 모델이라 한국어 검색 품질은 ko-sroberta보다 떨어진다. (배포 우선 절충)
+# ※ 저장(add)과 검색(query)이 같은 기본 함수를 쓰므로 의미공간(차원)은 항상 일치한다.
 
 
 def get_or_create_collection() -> chromadb.Collection:
@@ -26,7 +22,7 @@ def get_or_create_collection() -> chromadb.Collection:
     collection = client.get_or_create_collection(
         name="careerfit_jobs",
         metadata={"description": "CareerFit AI 취업·공모전 데이터"},
-        embedding_function=korean_ef,  # 저장 때와 동일한 한국어 임베딩 함수
+        # embedding_function 미지정 → ChromaDB 기본 임베딩(all-MiniLM, 384차원) 사용
     )
 
     if collection.count() == 0:
