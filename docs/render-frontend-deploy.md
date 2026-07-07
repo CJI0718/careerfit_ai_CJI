@@ -3,7 +3,7 @@
 React/Vite 프론트엔드를 백엔드와 연결하고, **로컬**과 **Render 클라우드** 양쪽에서 동작시키는 방법을 정리한다. 초보자 기준으로 따라 할 수 있게 순서대로 설명한다.
 
 > 백엔드(FastAPI)는 이미 Docker 기반 Render Web Service로 배포돼 있다.
-> 예시 백엔드 URL: `https://careerfit-ai-jawa.onrender.com` (본인 값으로 바꿔서 사용)
+> 현재 백엔드 URL: `https://careerfit-ai-cji.onrender.com`
 
 ---
 
@@ -112,7 +112,7 @@ FRONTEND_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://your-fronte
 **프론트엔드 서비스 (careerfit-frontend)**
 | Key | 값(예시) | 비고 |
 |-----|----------|------|
-| `VITE_API_BASE_URL` | `https://careerfit-ai-jawa.onrender.com` | 백엔드 URL. 빌드 시 번들에 박힘 |
+| `VITE_API_BASE_URL` | `https://careerfit-ai-cji.onrender.com` | 백엔드 URL. 빌드 시 번들에 박힘 |
 
 **백엔드 서비스 (careerfit-ai)** — 프론트 URL이 정해진 뒤 추가
 | Key | 값(예시) | 비고 |
