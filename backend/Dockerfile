@@ -17,9 +17,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# HuggingFace 모델 캐시 위치. appuser 홈이 /nonexistent(쓰기 불가)라
-# 기본 캐시 경로를 못 쓰므로, 쓰기 가능한 전용 디렉토리로 지정한다.
-ENV HF_HOME=/opt/hf_cache
+# appuser 홈이 /nonexistent(쓰기 불가)라, ChromaDB 기본 임베딩(all-MiniLM) 모델을
+# 받아 둘 쓰기 가능한 위치를 HOME으로 지정한다. (chroma는 ~/.cache/chroma 에 내려받음)
+ENV HOME=/opt/appcache
 
 WORKDIR /app
 
@@ -35,8 +35,8 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# 모델 캐시 디렉토리를 미리 만들고 appuser 소유로 지정 (아래 빌드 단계·런타임에서 쓰기 위함)
-RUN mkdir -p /opt/hf_cache && chown appuser /opt/hf_cache
+# 캐시 디렉토리를 미리 만들고 appuser 소유로 지정 (런타임에 임베딩 모델을 받아 저장)
+RUN mkdir -p /opt/appcache && chown appuser /opt/appcache
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
@@ -48,13 +48,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Switch to the non-privileged user to run the application.
 USER appuser
-
-# 임베딩 모델(ko-sroberta)을 빌드 시점에 미리 내려받아 이미지에 포함시킨다.
-# → 컨테이너 실행 때마다 400MB를 다시 받지 않아 시작이 빠르고, 네트워크 없이도 뜬다.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('jhgan/ko-sroberta-multitask')"
-
-# 위에서 캐시를 이미 채웠으므로 런타임엔 네트워크 조회 없이 캐시만 사용한다.
-ENV HF_HUB_OFFLINE=1
 
 # Copy the source code into the container.
 # --chown: 파일 소유자를 appuser로 지정. 이래야 런타임에 appuser가
