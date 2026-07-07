@@ -349,6 +349,56 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
 
 ---
 
+## 5일차 구현 내용
+
+5일차 주제는 **Docker 컨테이너화**다. 로컬 venv 없이 어디서든 동일하게 실행되도록 백엔드를 이미지로 패키징하고, 클라우드(Render) 배포 기반을 마련했다.
+
+### 왜 Docker인가
+
+- "내 PC에선 되는데 서버에선 안 됨" 문제 제거 — Python 버전·의존성·임베딩 모델까지 이미지에 고정한다.
+- Render 같은 클라우드에 **Dockerfile 하나로 그대로 배포**할 수 있다.
+
+### Dockerfile 핵심 구성 (`backend/Dockerfile`)
+
+| 단계 | 내용 | 이유 |
+|------|------|------|
+| `FROM python:3.12-slim` | 베이스 이미지 | 로컬 venv(3.12)와 버전 일치 |
+| 비-root 유저(`appuser`) 생성 | 권한 최소화 | 컨테이너 보안 모범사례 |
+| `pip install -r requirements.txt` | 의존성 설치 | requirements 미변경 시 레이어 캐시 재사용 |
+| **모델 사전 다운로드** | `ko-sroberta`를 빌드 시 받아 이미지에 내장 | 실행마다 재다운로드 방지·오프라인 구동 |
+| `COPY --chown=appuser` | 소스 복사 | 런타임에 `chroma_db` 쓰기 권한 확보 |
+| `CMD uvicorn main:app --host 0.0.0.0` | 실행 | 컨테이너 외부에서 접근하려면 `0.0.0.0` |
+
+### 컨테이너화하며 해결한 문제 (기록)
+
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| 빌드 즉시 실패 | `COPY . .`가 거대한 `venv/`까지 복사 | `.dockerignore`에 `venv` 추가 |
+| `Permission denied: /app/chroma_db` | 비-root 유저가 root 소유 폴더에 쓰기 시도 | `COPY --chown=appuser:appuser . .` |
+| `Permission denied: /nonexistent` | HuggingFace 캐시가 쓰기 불가한 홈을 가리킴 | `HF_HOME` 지정 + 모델을 빌드 시 내장 |
+
+### 실행 방법
+
+**반드시 `backend/` 폴더 안에서 실행한다.**
+
+```powershell
+# 이미지 빌드 (최초·Dockerfile/의존성 변경 시)
+docker build -t careerfit-ai .
+
+# 컨테이너 실행 (.env로 API Key 주입 — 키를 이미지에 굽지 않는다)
+docker run --rm -p 8000:8000 --env-file .env careerfit-ai
+```
+
+`http://localhost:8000/docs`에서 동작을 확인한다. `docker compose up --build`로도 실행할 수 있다(`compose.yaml`).
+
+### 보안
+
+- API Key는 **이미지에 포함하지 않고** 실행 시 `--env-file .env`로 주입한다. `.env`는 `.dockerignore`·`.gitignore` 양쪽에서 제외된다.
+
+> **배포 데이터 주의**: `chroma_db/`와 `rag_documents.json`은 재생성물이라 Git에서 제외된다. 로컬 `docker build`는 이들을 이미지에 담지만, **Render처럼 Git 저장소에서 빌드하는 환경에선 포함되지 않으므로** 벡터 데이터를 별도로 포함하거나 시작 시 재생성하도록 처리해야 한다.
+
+---
+
 ## 진행 현황
 
 - [x] **1일차**: 프로젝트 기획 및 개발 환경 세팅
@@ -368,5 +418,7 @@ ChromaDB에 적재하기 전, "마감월·기업유형으로 공고를 걸러내
   - **프론트엔드 초기 구성**: Tailwind v3 설정을 `frontend/`로 통일, React 컴포넌트 구조(`App`·`InputForm`·`ResultCard`·`SourceCard`) 및 `/analyze` 연동, `docs/FRONTEND_GUIDE.md` 작성(Python 개발자용 해설 + 코드 리뷰)
   - **UI/UX 리디자인**: Vite 템플릿 잔재 제거 후 발표용 세련화(그라데이션·아이콘 배지·스피너·fade-in·접근성 개선), `design-skill.md` 기준 적용
   - **AI 도구 공통 harness 도입**: `harness/`(운영 매뉴얼·라우팅·agents·checks·skills)로 규칙 중앙화, 각 도구 설정을 얇은 게이트로 통일
-- [ ] **5일차**: UI 다듬기 + Docker + 포트폴리오 완성
-  - *(남은 작업: UI 스타일 보강·접근성 개선, Docker 컨테이너화)*
+- [x] **5일차**: Docker 컨테이너화 + 배포 준비
+  - **Docker**: `backend/Dockerfile`·`.dockerignore`·`compose.yaml` 작성 — `python:3.12-slim` 기반, 비-root 유저·임베딩 모델 내장·`chroma_db` 쓰기권한 해결
+  - `docker run` 정상 구동 확인(`/`·`/health`·`/docs` 모두 HTTP 200), Render 배포 기반 마련
+  - *(남은 작업: Render 배포 시 RAG 데이터 포함/재생성, UI 스타일 보강·포트폴리오 완성)*
