@@ -1,6 +1,10 @@
 # 환경변수 — API Key 포함. 절대 GitHub에 올리지 않는다.
+# (.env.example / .env.production.example 같은 견본만 커밋 허용)
 
 .env
+.env.*
+!.env.example
+!.env.production.example
 
 
 
